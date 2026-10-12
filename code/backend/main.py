@@ -1,0 +1,82 @@
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+from database import get_connection, initialize_database
+
+app = FastAPI(
+    title="GradeTracker API",
+    description="Backend API for GradeTracker",
+    version="0.1.0"
+)
+
+initialize_database()
+
+
+class GradeInput(BaseModel):
+    instructor_id: int
+    student_id: int
+    course_id: int
+    score: float = Field(ge=0, le=100)
+
+
+@app.get("/")
+def home():
+    return {
+        "message": "Welcome to GradeTracker",
+        "status": "running"
+    }
+
+
+@app.post("/grades", status_code=201)
+def enter_grade(grade: GradeInput):
+    with get_connection() as connection:
+
+        # Verify the instructor teaches this course.
+        course = connection.execute(
+            """
+            SELECT id FROM courses
+            WHERE id = ? AND instructor_id = ?
+            """,
+            (grade.course_id, grade.instructor_id)
+        ).fetchone()
+
+        if course is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Instructor is not assigned to this course"
+            )
+
+        # Verify the student is enrolled.
+        enrollment = connection.execute(
+            """
+            SELECT student_id FROM enrollments
+            WHERE student_id = ? AND course_id = ?
+            """,
+            (grade.student_id, grade.course_id)
+        ).fetchone()
+
+        if enrollment is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Student is not enrolled in this course"
+            )
+
+        # Save the grade.
+        cursor = connection.execute(
+            """
+            INSERT INTO grades (student_id, course_id, score)
+            VALUES (?, ?, ?)
+            """,
+            (grade.student_id, grade.course_id, grade.score)
+        )
+
+        connection.commit()
+
+        return {
+            "message": "Grade saved successfully",
+            "grade_id": cursor.lastrowid,
+            "student_id": grade.student_id,
+            "course_id": grade.course_id,
+            "score": grade.score
+        }
