@@ -92,3 +92,32 @@ def test_instructor_not_assigned():
     })
 
     assert response.status_code == 403
+
+
+
+def test_grade_saved_to_database():
+    # Submit a grade through the API
+    response = client.post("/grades", json={
+        "instructor_id": 1,
+        "student_id": 1,
+        "course_id": 1,
+        "score": 95
+    })
+
+    assert response.status_code == 201
+
+    # Check that the grade was actually saved
+    with database.get_connection() as connection:
+        saved_grade = connection.execute(
+            """
+            SELECT student_id, course_id, score
+            FROM grades
+            WHERE student_id = ? AND course_id = ?
+            """,
+            (1, 1)
+        ).fetchone()
+
+    assert saved_grade is not None
+    assert saved_grade["student_id"] == 1
+    assert saved_grade["course_id"] == 1
+    assert saved_grade["score"] == 95
