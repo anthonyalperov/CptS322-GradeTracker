@@ -80,3 +80,45 @@ def enter_grade(grade: GradeInput):
             "course_id": grade.course_id,
             "score": grade.score
         }
+@app.get("/students/{student_id}/grades")
+def view_student_grades(student_id: int):
+    with get_connection() as connection:
+
+        # Check whether the student exists.
+        student = connection.execute(
+            "SELECT id FROM students WHERE id = ?",
+            (student_id,)
+        ).fetchone()
+
+        if student is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        # Retrieve grades with their course names.
+        grades = connection.execute(
+            """
+            SELECT
+                grades.course_id,
+                courses.name AS course_name,
+                grades.score
+            FROM grades
+            JOIN courses ON grades.course_id = courses.id
+            WHERE grades.student_id = ?
+            ORDER BY grades.id
+            """,
+            (student_id,)
+        ).fetchall()
+
+        return {
+            "student_id": student_id,
+            "grades": [
+                {
+                    "course_id": grade["course_id"],
+                    "course_name": grade["course_name"],
+                    "score": grade["score"]
+                }
+                for grade in grades
+            ]
+        }
