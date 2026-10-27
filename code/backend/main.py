@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from database import get_connection, initialize_database
 
+
 app = FastAPI(
     title="GradeTracker API",
     description="Backend API for GradeTracker",
@@ -17,6 +18,11 @@ class GradeInput(BaseModel):
     instructor_id: int
     student_id: int
     course_id: int
+    score: float = Field(ge=0, le=100)
+
+
+class GradeUpdate(BaseModel):
+    instructor_id: int
     score: float = Field(ge=0, le=100)
 
 
@@ -80,6 +86,64 @@ def enter_grade(grade: GradeInput):
             "course_id": grade.course_id,
             "score": grade.score
         }
+
+
+@app.put("/grades/{grade_id}")
+def update_grade(grade_id: int, grade: GradeUpdate):
+    with get_connection() as connection:
+
+        # Find the existing grade.
+        existing_grade = connection.execute(
+            """
+            SELECT id, student_id, course_id, score
+            FROM grades
+            WHERE id = ?
+            """,
+            (grade_id,)
+        ).fetchone()
+
+        if existing_grade is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Grade not found"
+            )
+
+        # Verify the instructor teaches the grade's course.
+        course = connection.execute(
+            """
+            SELECT id FROM courses
+            WHERE id = ? AND instructor_id = ?
+            """,
+            (existing_grade["course_id"], grade.instructor_id)
+        ).fetchone()
+
+        if course is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Instructor is not assigned to this course"
+            )
+
+        # Update the existing grade.
+        connection.execute(
+            """
+            UPDATE grades
+            SET score = ?
+            WHERE id = ?
+            """,
+            (grade.score, grade_id)
+        )
+
+        connection.commit()
+
+        return {
+            "message": "Grade updated successfully",
+            "grade_id": grade_id,
+            "student_id": existing_grade["student_id"],
+            "course_id": existing_grade["course_id"],
+            "score": grade.score
+        }
+
+
 @app.get("/students/{student_id}/grades")
 def view_student_grades(student_id: int):
     with get_connection() as connection:
