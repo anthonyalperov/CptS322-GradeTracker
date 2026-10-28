@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradeTracker | Instructor Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/script.js" defer></script>
+</head>
+<body>
+    <main class="dashboard">
+        <header>
+            <h1>GradeTracker</h1>
+            <p>Instructor Dashboard</p>
+        </header>
+
+        <section class="card">
+            <h2>Update Student Grade</h2>
+            <p>Enter the grade details below to update a score.</p>
+
+            <form id="grade-form">
+                <label for="grade-id">Grade ID</label>
+                <input
+                    type="number"
+                    id="grade-id"
+                    min="1"
+                    required
+                >
+
+                <label for="instructor-id">Instructor ID</label>
+                <input
+                    type="number"
+                    id="instructor-id"
+                    min="1"
+                    required
+                >
+
+                <label for="score">New Score</label>
+                <input
+                    type="number"
+                    id="score"
+                    min="0"
+                    max="100"
+                    step="any"
+                    required
+                >
+
+                <button type="submit">Update Grade</button>
+            </form>
+
+            <p id="message" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+</body>
+</html>
