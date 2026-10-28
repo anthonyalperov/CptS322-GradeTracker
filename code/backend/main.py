@@ -35,6 +35,12 @@ def instructor_dashboard():
     return FileResponse(FRONTEND_DIR / "index.html")
 
 
+@app.get("/student")
+def student_dashboard():
+    """Serve the student grades dashboard."""
+    return FileResponse(FRONTEND_DIR / "student.html")
+
+
 class GradeInput(BaseModel):
     instructor_id: int
     student_id: int
