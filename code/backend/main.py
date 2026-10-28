@@ -1,5 +1,9 @@
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from database import get_connection, initialize_database
@@ -12,6 +16,23 @@ app = FastAPI(
 )
 
 initialize_database()
+
+
+# Locate the frontend folder relative to this file.
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+# Serve frontend CSS and JavaScript files.
+app.mount(
+    "/static",
+    StaticFiles(directory=FRONTEND_DIR),
+    name="static"
+)
+
+
+@app.get("/dashboard", include_in_schema=False)
+def instructor_dashboard():
+    """Display the instructor grade management dashboard."""
+    return FileResponse(FRONTEND_DIR / "index.html")
 
 
 class GradeInput(BaseModel):
