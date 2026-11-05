@@ -278,3 +278,5 @@ def submit_feedback(grade_id: int, feedback: FeedbackInput):
             "comment": feedback.comment.strip()
         }
 
+@app.get("/students/{student_id}/feedback")
+def view_student_feedback(student_id: int):
