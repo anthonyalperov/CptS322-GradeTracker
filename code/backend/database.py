@@ -55,4 +55,17 @@ def initialize_database():
                 FOREIGN KEY (student_id, course_id)
                     REFERENCES enrollments(student_id, course_id)
             );
+
+            
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY,
+    grade_id INTEGER NOT NULL,
+    instructor_id INTEGER NOT NULL,
+    comment TEXT NOT NULL CHECK (length(trim(comment)) > 0),
+    FOREIGN KEY (grade_id)
+        REFERENCES grades(id),
+    FOREIGN KEY (instructor_id)
+        REFERENCES instructors(id)
+);
+
         """)

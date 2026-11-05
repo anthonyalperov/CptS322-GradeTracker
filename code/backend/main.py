@@ -47,6 +47,11 @@ class GradeUpdate(BaseModel):
     score: float = Field(ge=0, le=100)
 
 
+class FeedbackInput(BaseModel):
+    instructor_id: int
+    comment: str = Field(min_length=1)
+
+
 @app.get("/")
 def home():
     return {
@@ -208,6 +213,8 @@ def view_student_grades(student_id: int):
             ]
         }
 
+
+# Issue #4: Student can view course-specific grades.
 @app.get("/students/{student_id}/courses/{course_id}/grades")
 def view_course_grades(student_id: int, course_id: int):
     with get_connection() as connection:
@@ -272,5 +279,120 @@ def view_course_grades(student_id: int, course_id: int):
                     "score": grade["score"]
                 }
                 for grade in grades
+            ]
+        }
+
+
+# Issue #8: Instructor can provide feedback to students.
+@app.post("/grades/{grade_id}/feedback", status_code=201)
+def submit_feedback(grade_id: int, feedback: FeedbackInput):
+    if not feedback.comment.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Feedback cannot be empty"
+        )
+
+    with get_connection() as connection:
+
+        # Find the grade.
+        grade = connection.execute(
+            """
+            SELECT id, student_id, course_id
+            FROM grades
+            WHERE id = ?
+            """,
+            (grade_id,)
+        ).fetchone()
+
+        if grade is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Grade not found"
+            )
+
+        # Verify the instructor teaches this course.
+        course = connection.execute(
+            """
+            SELECT id FROM courses
+            WHERE id = ? AND instructor_id = ?
+            """,
+            (grade["course_id"], feedback.instructor_id)
+        ).fetchone()
+
+        if course is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Instructor is not assigned to this course"
+            )
+
+        # Save the feedback.
+        cursor = connection.execute(
+            """
+            INSERT INTO feedback (grade_id, instructor_id, comment)
+            VALUES (?, ?, ?)
+            """,
+            (
+                grade_id,
+                feedback.instructor_id,
+                feedback.comment.strip()
+            )
+        )
+
+        connection.commit()
+
+        return {
+            "message": "Feedback saved successfully",
+            "feedback_id": cursor.lastrowid,
+            "grade_id": grade_id,
+            "student_id": grade["student_id"],
+            "comment": feedback.comment.strip()
+        }
+
+
+@app.get("/students/{student_id}/feedback")
+def view_student_feedback(student_id: int):
+    with get_connection() as connection:
+
+        # Verify the student exists.
+        student = connection.execute(
+            "SELECT id FROM students WHERE id = ?",
+            (student_id,)
+        ).fetchone()
+
+        if student is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        # Retrieve feedback associated with the student's grades.
+        feedback = connection.execute(
+            """
+            SELECT
+                feedback.id,
+                feedback.grade_id,
+                feedback.comment,
+                grades.course_id,
+                courses.name AS course_name
+            FROM feedback
+            JOIN grades ON feedback.grade_id = grades.id
+            JOIN courses ON grades.course_id = courses.id
+            WHERE grades.student_id = ?
+            ORDER BY feedback.id
+            """,
+            (student_id,)
+        ).fetchall()
+
+        return {
+            "student_id": student_id,
+            "feedback": [
+                {
+                    "feedback_id": item["id"],
+                    "grade_id": item["grade_id"],
+                    "course_id": item["course_id"],
+                    "course_name": item["course_name"],
+                    "comment": item["comment"]
+                }
+                for item in feedback
             ]
         }
