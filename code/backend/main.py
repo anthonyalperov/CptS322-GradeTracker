@@ -280,3 +280,47 @@ def submit_feedback(grade_id: int, feedback: FeedbackInput):
 
 @app.get("/students/{student_id}/feedback")
 def view_student_feedback(student_id: int):
+    
+    with get_connection() as connection:
+        student = connection.execute(
+            "SELECT id FROM students WHERE id = ?",
+            (student_id,)
+        ).fetchone()
+
+        if student is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        feedback = connection.execute(
+            """
+            SELECT
+                feedback.id,
+                feedback.grade_id,
+                feedback.comment,
+                grades.course_id,
+                courses.name AS course_name
+            FROM feedback
+            JOIN grades ON feedback.grade_id = grades.id
+            JOIN courses ON grades.course_id = courses.id
+            WHERE grades.student_id = ?
+            ORDER BY feedback.id
+            """,
+            (student_id,)
+        ).fetchall()
+
+        return {
+            "student_id": student_id,
+            "feedback": [
+                {
+                    "feedback_id": item["id"],
+                    "grade_id": item["grade_id"],
+                    "course_id": item["course_id"],
+                    "course_name": item["course_name"],
+                    "comment": item["comment"]
+                }
+                for item in feedback
+            ]
+        }
+
