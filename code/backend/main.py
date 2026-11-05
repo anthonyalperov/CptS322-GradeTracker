@@ -207,3 +207,70 @@ def view_student_grades(student_id: int):
                 for grade in grades
             ]
         }
+
+@app.get("/students/{student_id}/courses/{course_id}/grades")
+def view_course_grades(student_id: int, course_id: int):
+    with get_connection() as connection:
+
+        # Verify the student exists.
+        student = connection.execute(
+            "SELECT id FROM students WHERE id = ?",
+            (student_id,)
+        ).fetchone()
+
+        if student is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        # Verify the course exists.
+        course = connection.execute(
+            "SELECT id, name FROM courses WHERE id = ?",
+            (course_id,)
+        ).fetchone()
+
+        if course is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Course not found"
+            )
+
+        # Verify the student is enrolled in the course.
+        enrollment = connection.execute(
+            """
+            SELECT student_id FROM enrollments
+            WHERE student_id = ? AND course_id = ?
+            """,
+            (student_id, course_id)
+        ).fetchone()
+
+        if enrollment is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Student is not enrolled in this course"
+            )
+
+        # Retrieve grades for this course only.
+        grades = connection.execute(
+            """
+            SELECT id, score
+            FROM grades
+            WHERE student_id = ? AND course_id = ?
+            ORDER BY id
+            """,
+            (student_id, course_id)
+        ).fetchall()
+
+        return {
+            "student_id": student_id,
+            "course_id": course_id,
+            "course_name": course["name"],
+            "grades": [
+                {
+                    "grade_id": grade["id"],
+                    "score": grade["score"]
+                }
+                for grade in grades
+            ]
+        }
