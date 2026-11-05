@@ -207,3 +207,74 @@ def view_student_grades(student_id: int):
                 for grade in grades
             ]
         }
+
+
+class FeedbackInput(BaseModel):
+    instructor_id: int
+    comment: str = Field(min_length=1)
+
+
+@app.post("/grades/{grade_id}/feedback", status_code=201)
+def submit_feedback(grade_id: int, feedback: FeedbackInput):
+    if not feedback.comment.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Feedback cannot be empty"
+        )
+
+    with get_connection() as connection:
+
+        # Find the grade.
+        grade = connection.execute(
+            """
+            SELECT id, student_id, course_id
+            FROM grades
+            WHERE id = ?
+            """,
+            (grade_id,)
+        ).fetchone()
+
+        if grade is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Grade not found"
+            )
+
+        # Verify the instructor teaches this course.
+        course = connection.execute(
+            """
+            SELECT id FROM courses
+            WHERE id = ? AND instructor_id = ?
+            """,
+            (grade["course_id"], feedback.instructor_id)
+        ).fetchone()
+
+        if course is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Instructor is not assigned to this course"
+            )
+
+        # Save the feedback.
+        cursor = connection.execute(
+            """
+            INSERT INTO feedback (grade_id, instructor_id, comment)
+            VALUES (?, ?, ?)
+            """,
+            (
+                grade_id,
+                feedback.instructor_id,
+                feedback.comment.strip()
+            )
+        )
+
+        connection.commit()
+
+        return {
+            "message": "Feedback saved successfully",
+            "feedback_id": cursor.lastrowid,
+            "grade_id": grade_id,
+            "student_id": grade["student_id"],
+            "comment": feedback.comment.strip()
+        }
+
