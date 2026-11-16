@@ -1,0 +1,11 @@
+services:
+  gradetracker:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - gradetracker-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  gradetracker-data:
