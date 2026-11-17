@@ -1,52 +1,135 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>GradeTracker | Student Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
     <script src="/static/student.js" defer></script>
 </head>
-<body>
-    <main class="dashboard">
-        <header>
-            <h1>GradeTracker</h1>
-            <p>Student Dashboard</p>
-        </header>
+<body class="student-page">
+    <div class="student-shell">
+        <aside class="student-sidebar" aria-label="Main navigation">
+            <a class="student-brand" href="/student" aria-label="GradeTracker student home">
+                <span class="brand-mark" aria-hidden="true">G</span>
+                <span>Grade<span class="brand-accent">Tracker</span></span>
+            </a>
+            <p class="sidebar-caption">STUDENT WORKSPACE</p>
+            <nav class="student-nav" aria-label="Student navigation">
+                <a class="active" href="/student" aria-current="page"><span aria-hidden="true">▦</span> Dashboard</a>
+                <a href="#course-performance"><span aria-hidden="true">▤</span> My Courses</a>
+                <a href="#insights"><span aria-hidden="true">◷</span> Performance</a>
+            </nav>
+            <div class="sidebar-bottom">
+                <span class="sidebar-dot" aria-hidden="true"></span>
+                <span>GradeTracker · Sprint 3</span>
+            </div>
+        </aside>
 
-        <section class="card">
-            <h2>View My Grades</h2>
-            <p>Enter your student ID to view your grades.</p>
+        <main class="student-main">
+            <header class="student-topbar">
+                <div>
+                    <p class="eyebrow">ACADEMIC OVERVIEW</p>
+                    <h1>Student Dashboard</h1>
+                    <p class="page-intro">Your courses, performance, and progress in one place.</p>
+                </div>
+                <span class="term-pill">GradeTracker</span>
+            </header>
 
-            <form id="student-form">
-                <label for="student-id">Student ID</label>
-                <input
-                    type="number"
-                    id="student-id"
-                    min="1"
-                    required
-                >
-
-                <button type="submit">View Grades</button>
-            </form>
-
-            <p id="message" role="status" aria-live="polite"></p>
-
-            <section id="grades-section" hidden>
-                <h3>My Grades</h3>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Course</th>
-                            <th>Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="grades-body"></tbody>
-                </table>
+            <section class="lookup-panel" aria-labelledby="lookup-title">
+                <div class="lookup-heading">
+                    <div>
+                        <h2 id="lookup-title">Find your grades</h2>
+                        <p>Enter your student ID to load your latest records.</p>
+                    </div>
+                </div>
+                <form id="student-form" class="student-lookup-form">
+                    <div class="lookup-field">
+                        <label for="student-id">Student ID</label>
+                        <input id="student-id" name="student_id" type="number" min="1" step="1" placeholder="e.g., 1" required autocomplete="off">
+                    </div>
+                    <button id="lookup-button" type="submit">Load dashboard <span aria-hidden="true">→</span></button>
+                </form>
+                <p id="message" class="student-message" role="status" aria-live="polite"></p>
             </section>
-        </section>
-    </main>
+
+            <section id="dashboard-content" hidden aria-live="polite">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">YOUR PERFORMANCE</p>
+                        <h2>Overview</h2>
+                    </div>
+                    <span id="student-label" class="student-chip"></span>
+                </div>
+
+                <div class="student-stat-grid">
+                    <article class="student-stat-card">
+                        <p>Overall average</p>
+                        <div class="stat-main"><strong id="overall-average">—</strong><span>%</span></div>
+                        <span class="stat-note">Across recorded grades</span>
+                    </article>
+                    <article class="student-stat-card">
+                        <p>Active courses</p>
+                        <div class="stat-main"><strong id="course-count">—</strong></div>
+                        <span class="stat-note">Courses with grades</span>
+                    </article>
+                    <article class="student-stat-card">
+                        <p>Letter grade</p>
+                        <div class="stat-main"><strong id="overall-letter">—</strong></div>
+                        <span class="stat-note">Estimated from average</span>
+                    </article>
+                    <article class="student-stat-card">
+                        <p>Grades recorded</p>
+                        <div class="stat-main"><strong id="grade-count">—</strong></div>
+                        <span class="stat-note">Total grade entries</span>
+                    </article>
+                </div>
+
+                <div class="dashboard-content-grid">
+                    <section class="student-panel chart-panel" id="insights" aria-labelledby="chart-heading">
+                        <div class="panel-header">
+                            <div>
+                                <h3 id="chart-heading">Course comparison</h3>
+                                <p>Average recorded score by course</p>
+                            </div>
+                            <span class="mini-tag">Score (%)</span>
+                        </div>
+                        <div class="chart-container"><canvas id="course-chart" role="img" aria-label="Bar chart comparing course grade averages"></canvas></div>
+                        <p id="chart-fallback" class="help-text" hidden>Charts could not load. Your course averages are available below.</p>
+                    </section>
+                    <section class="student-panel highlights-panel" aria-labelledby="highlights-heading">
+                        <div class="panel-header"><div><h3 id="highlights-heading">Quick insights</h3><p>Your latest performance snapshot</p></div></div>
+                        <div class="insight-item"><span class="insight-icon" aria-hidden="true">★</span><div><span>Strongest course</span><strong id="top-course">—</strong></div></div>
+                        <div class="insight-item"><span class="insight-icon" aria-hidden="true">↗</span><div><span>Average performance</span><strong id="average-insight">—</strong></div></div>
+                        <div class="insight-item"><span class="insight-icon" aria-hidden="true">◎</span><div><span>Next step</span><strong id="next-step">Review your course scores</strong></div></div>
+                    </section>
+                </div>
+
+                <section class="student-panel courses-panel" id="course-performance" aria-labelledby="courses-heading">
+                    <div class="panel-header"><div><h3 id="courses-heading">Course progress</h3><p>Average of the grade records currently available for each course</p></div></div>
+                    <div id="course-progress" class="course-progress-list"></div>
+                </section>
+
+                <section class="student-panel grades-panel" aria-labelledby="grades-heading">
+                    <div class="panel-header"><div><h3 id="grades-heading">Grade details</h3><p>Individual grades returned by GradeTracker</p></div></div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th scope="col">Course</th><th scope="col">Score</th><th scope="col">Letter</th></tr></thead>
+                            <tbody id="grades-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+                <p class="dashboard-disclaimer">Grade averages shown here are unweighted percentages based on saved grade records. They are not cumulative GPA calculations. Course credits and assignment weights are not yet tracked.</p>
+            </section>
+
+            <section id="empty-state" class="student-panel welcome-state" aria-live="polite">
+                <div class="welcome-symbol" aria-hidden="true">▥</div>
+                <h2>Ready when you are.</h2>
+                <p>Enter a student ID above to see grade summaries, course progress, and performance charts.</p>
+            </section>
+        </main>
+    </div>
 </body>
 </html>
