@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
     <script src="/static/student.js" defer></script>
+    <script src="/static/goals.js" defer></script>
+    <link rel="stylesheet" href="/static/goals.css">
 </head>
 <body class="student-page">
     <div class="student-shell">
@@ -54,6 +56,18 @@
                 </form>
                 <p id="message" class="student-message" role="status" aria-live="polite"></p>
             </section>
+
+
+                <!-- Sprint 3 #25: academic goals loaded even for courses without grades -->
+                <section id="academic-goals-panel" class="student-panel goals-panel" hidden aria-labelledby="academic-goals-heading">
+                    <div class="panel-header">
+                        <div><h3 id="academic-goals-heading">Academic goals</h3>
+                        <p>Set course targets and see how close you are.</p></div>
+                        <span class="mini-tag">Personal targets</span>
+                    </div>
+                    <p id="goals-message" class="student-message" role="status" aria-live="polite"></p>
+                    <div id="academic-goals-list" class="academic-goals-list"></div>
+                </section>
 
             <section id="dashboard-content" hidden aria-live="polite">
                 <div class="section-heading">

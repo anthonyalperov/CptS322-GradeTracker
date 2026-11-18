@@ -185,6 +185,7 @@ gradeForm.addEventListener("submit", async event => {
         return;
     }
     resetDashboard();
+    window.GradeTrackerGoals?.reset();
     submitButton.disabled = true;
     submitButton.textContent = "Loading…";
     message.textContent = "Loading grades…";
@@ -201,6 +202,7 @@ gradeForm.addEventListener("submit", async event => {
         const data = await response.json();
         if (!data || !Array.isArray(data.grades)) throw new Error("Unexpected response from the server.");
         renderDashboard(studentId, data.grades);
+        await window.GradeTrackerGoals?.load(studentId);
     } catch (error) {
         message.textContent = error.message || "Unable to load grades.";
         message.className = "student-message error";

@@ -402,3 +402,84 @@ def view_student_feedback(student_id: int):
                 for item in feedback
             ]
         }
+
+
+# Sprint 3 Issue #25: Academic grade goals.
+# IMPORTANT: Gate these endpoints with student session authorization when Issue #7 lands.
+class AcademicGoalInput(BaseModel):
+    target_percentage: float = Field(ge=0, le=100, allow_inf_nan=False)
+
+
+def _student_exists(connection, student_id: int) -> bool:
+    return connection.execute(
+        "SELECT 1 FROM students WHERE id = ?", (student_id,)
+    ).fetchone() is not None
+
+
+@app.get("/students/{student_id}/goals")
+def view_academic_goals(student_id: int):
+    """Return every enrolled course, its average, and optional target."""
+    with get_connection() as connection:
+        if not _student_exists(connection, student_id):
+            raise HTTPException(status_code=404, detail="Student not found")
+        rows = connection.execute("""
+            SELECT c.id AS course_id, c.name AS course_name,
+                   ag.target_percentage AS target_percentage,
+                   AVG(g.score) AS current_average,
+                   COUNT(g.id) AS grade_count
+            FROM enrollments e
+            JOIN courses c ON c.id = e.course_id
+            LEFT JOIN academic_goals ag
+                ON ag.student_id = e.student_id AND ag.course_id = e.course_id
+            LEFT JOIN grades g
+                ON g.student_id = e.student_id AND g.course_id = e.course_id
+            WHERE e.student_id = ?
+            GROUP BY c.id, c.name, ag.target_percentage
+            ORDER BY c.name, c.id
+        """, (student_id,)).fetchall()
+        courses = []
+        for row in rows:
+            target = row["target_percentage"]
+            average = row["current_average"]
+            if target is None:
+                status = "not_set"
+            elif average is None:
+                status = "no_grades"
+            else:
+                status = "met" if average >= target else "below_target"
+            courses.append({
+                "course_id": row["course_id"],
+                "course_name": row["course_name"],
+                "target_percentage": target,
+                "current_average": round(average, 2) if average is not None else None,
+                "grade_count": row["grade_count"],
+                "status": status,
+            })
+        return {"student_id": student_id, "courses": courses}
+
+
+@app.put("/students/{student_id}/courses/{course_id}/goal")
+def save_academic_goal(student_id: int, course_id: int, goal: AcademicGoalInput):
+    """Create or replace an enrolled student's target."""
+    with get_connection() as connection:
+        if not _student_exists(connection, student_id):
+            raise HTTPException(status_code=404, detail="Student not found")
+        enrollment = connection.execute(
+            "SELECT 1 FROM enrollments WHERE student_id = ? AND course_id = ?",
+            (student_id, course_id)
+        ).fetchone()
+        if enrollment is None:
+            raise HTTPException(status_code=403, detail="Student is not enrolled in this course")
+        connection.execute("""
+            INSERT INTO academic_goals (student_id, course_id, target_percentage)
+            VALUES (?, ?, ?)
+            ON CONFLICT(student_id, course_id) DO UPDATE SET
+                target_percentage = excluded.target_percentage
+        """, (student_id, course_id, goal.target_percentage))
+        connection.commit()
+        return {
+            "student_id": student_id,
+            "course_id": course_id,
+            "target_percentage": goal.target_percentage,
+            "message": "Academic goal saved"
+        }

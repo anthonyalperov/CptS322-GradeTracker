@@ -68,4 +68,17 @@ CREATE TABLE IF NOT EXISTS feedback (
         REFERENCES instructors(id)
 );
 
+
+            -- Sprint 3 Issue #25: per-student per-course grade targets.
+            CREATE TABLE IF NOT EXISTS academic_goals (
+                student_id INTEGER NOT NULL,
+                course_id INTEGER NOT NULL,
+                target_percentage REAL NOT NULL
+                    CHECK (target_percentage >= 0 AND target_percentage <= 100),
+                PRIMARY KEY (student_id, course_id),
+                FOREIGN KEY (student_id, course_id)
+                    REFERENCES enrollments(student_id, course_id)
+                    ON DELETE CASCADE
+            );
+
         """)
