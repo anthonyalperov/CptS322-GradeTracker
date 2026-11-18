@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>GradeTracker | Sign In</title>
+  <link rel="stylesheet" href="/static/login.css">
+  <script src="/static/login.js" defer></script>
+</head>
+<body>
+  <main class="layout">
+    <section class="intro" aria-label="GradeTracker introduction">
+      <a class="brand" href="/static/login.html"><span class="brand-icon" aria-hidden="true">G</span><span>Grade<span class="brand-accent">Tracker</span></span></a>
+      <div class="intro-content">
+        <p class="eyebrow">STUDENT PERFORMANCE PLATFORM</p>
+        <h1>Keep your progress in view.</h1>
+        <p>One workspace for course grades, progress insights, and academic goals.</p>
+        <div class="intro-points"><span>Course performance</span><span>Academic goals</span><span>Grade insights</span></div>
+      </div>
+      <p class="intro-footer">GradeTracker · CptS 322</p>
+    </section>
+    <section class="login-panel" aria-labelledby="login-heading">
+      <div class="login-card">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2 id="login-heading">Sign in to GradeTracker</h2>
+        <p class="subheading">Use your account credentials to continue to your workspace.</p>
+        <form id="login-form" novalidate>
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" maxlength="100" required>
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+            <button type="button" id="toggle-password" class="password-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+          <p id="login-message" class="message" role="status" aria-live="polite"></p>
+          <button type="submit" id="sign-in-button" class="submit-button">Sign in <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="footer-note"><strong>Student · Instructor · Administrator</strong><span>Your account role determines your workspace.</span></div>
+      </div>
+      <p class="security-note">Credentials are verified by the server. Role access is not controlled by this page.</p>
+    </section>
+  </main>
+</body>
+</html>
